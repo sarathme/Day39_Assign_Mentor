@@ -1,9 +1,6 @@
-const dotenv = require("dotenv");
-
 const { MongoClient } = require("mongodb");
 const { catchAsync } = require("../utils/catchAsync");
 const AppError = require("./../utils/appError");
-dotenv.config();
 
 const url = process.env.DB_CONNECTION.replace(
   "<PASSWORD>",

@@ -1,6 +1,7 @@
 const express = require("express");
 
 const mentorRouter = require("./routes/mentorRoutes");
+const studentRouter = require("./routes/studentRoutes");
 const globalErrorHandler = require("./controllers/errorController");
 
 const app = express();
@@ -11,6 +12,7 @@ app.use(express.json());
 // ROUTES
 
 app.use("/api/v1/mentors", mentorRouter);
+app.use("/api/v1/students", studentRouter);
 
 app.use(globalErrorHandler);
 module.exports = app;
