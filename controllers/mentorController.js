@@ -11,9 +11,9 @@ const client = new MongoClient(url);
 exports.getAllMentors = catchAsync(async (req, res, next) => {
   await client.connect();
   const database = client.db("guvi_mentor");
-  const mentorsCollection = database.collection("mentors");
-  const mentors = await mentorsCollection.find({}).toArray();
+  const mentors = await database.collection("mentors").find({}).toArray();
   await client.close();
+
   res.status(200).json({
     status: "success",
     data: {
@@ -27,13 +27,11 @@ exports.createMentor = catchAsync(async (req, res, next) => {
   const database = client.db("guvi_mentor");
   const mentors = database.collection("mentors");
 
-  const mentorArr = await mentors
-    .find({
-      email: { $eq: req.body.email },
-    })
-    .toArray();
-  let mentor;
-  if (!mentorArr.length) {
+  let mentor = await mentors.findOne({
+    email: { $eq: req.body.email },
+  });
+
+  if (!mentor) {
     const created = await mentors.insertOne(req.body);
     mentor = await mentors.findOne({ _id: created.insertedId });
     await client.close();
@@ -102,7 +100,7 @@ exports.addStudent = catchAsync(async (req, res, next) => {
     {
       _id: mentorObjectId,
     },
-    { $push: { students: req.params.studentId } }
+    { $push: { studentIds: studentObjectId } }
   );
 
   if (!mentor) {
@@ -122,6 +120,43 @@ exports.addStudent = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       mentor,
+    },
+  });
+});
+
+exports.getStudentsOfMentor = catchAsync(async (req, res, next) => {
+  await client.connect();
+  const database = client.db("guvi_mentor");
+  let mentorObjectId;
+  try {
+    mentorObjectId = new ObjectId(req.params.mentorId);
+  } catch (err) {
+    console.error("Error:", err);
+    next(new AppError("No mentor found with the provided id", 404));
+    await client.close();
+    return;
+  }
+
+  console.log(mentorObjectId);
+  const mentor = await database
+    .collection("mentors")
+    .findOne({ _id: mentorObjectId });
+
+  let students = [];
+  for (const studentId of mentor.studentIds) {
+    const student = await database
+      .collection("students")
+      .findOne({ _id: studentId });
+    students.push(student);
+  }
+
+  await client.close();
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      mentorName: mentor.name,
+      students,
     },
   });
 });

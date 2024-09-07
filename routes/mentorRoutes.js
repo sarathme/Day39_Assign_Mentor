@@ -12,4 +12,6 @@ router
   .route("/:mentorId/students/:studentId")
   .patch(mentorController.addStudent);
 
+router.route("/:mentorId/students").get(mentorController.getStudentsOfMentor);
+
 module.exports = router;
