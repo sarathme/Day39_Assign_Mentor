@@ -50,30 +50,64 @@ exports.createStudent = catchAsync(async (req, res, next) => {
 });
 
 exports.changeMentorOfStudent = catchAsync(async (req, res, next) => {
+  // Connecting and use the database using mongodb client.
+
   await client.connect();
   const database = client.db("guvi_mentor");
+  const mentorsCollection = database.collection("mentors");
+  const studentsCollection = database.collection("students");
+
+  // Initializing mentor and student variables.
 
   let mentor;
   let student;
+
+  // Initial check for the url provided mentor id is a valid mongodb id.
+
   if (ObjectId.isValid(req.params.mentorId)) {
-    mentor = await database
-      .collection("mentors")
-      .findOne({ _id: new ObjectId(req.params.mentorId) });
+    // Find the mentor using the mentor Id
+    mentor = await mentorsCollection.findOne({
+      _id: new ObjectId(req.params.mentorId),
+    });
   } else {
+    // If the provided mentor id is not a valid mongodb id then send a error response.
+
     next(new AppError("No mentor found with the provided id", 404));
     await client.close();
     return;
   }
 
+  // If there is no mentor found with the id then sending an error response of Not Found.
+
+  if (!mentor) {
+    next(new AppError("No mentor found with the provided id", 404));
+    await client.close();
+    return;
+  }
+
+  // Initial check for the url provided student id is a valid mongodb id.
+
   if (ObjectId.isValid(req.params.studentId)) {
-    student = await database
-      .collection("students")
-      .findOne({ _id: new ObjectId(req.params.studentId) });
+    // Find the mentor using the mentor Id
+    student = await studentsCollection.findOne({
+      _id: new ObjectId(req.params.studentId),
+    });
   } else {
+    // If the provided student id is not a valid mongodb id then send a error response.
+
     next(new AppError("No student found with the provided id", 404));
     await client.close();
     return;
   }
+  // If there is no student found with the id then sending an error response of Not Found.
+
+  if (!mentor) {
+    next(new AppError("No mentor found with the provided id", 404));
+    await client.close();
+    return;
+  }
+
+  // Check if the mentor is already handling the provided student. If so send a bad request response.
 
   if (student.mentorId?.equals(mentor._id)) {
     next(
@@ -86,29 +120,29 @@ exports.changeMentorOfStudent = catchAsync(async (req, res, next) => {
     return;
   }
 
+  // Check for if the student has a mentor.
+
   if (!student.mentorId) {
-    await database
-      .collection("students")
-      .findOneAndUpdate(
-        { _id: student._id },
-        { $set: { mentorId: mentor._id } }
-      );
+    // if the student doesn't have a mentor add the mentor id to the student.
+    await studentsCollection.findOneAndUpdate(
+      { _id: student._id },
+      { $set: { mentorId: mentor._id } }
+    );
 
-    await database
-      .collection("mentors")
-      .findOneAndUpdate(
-        { _id: mentor._id },
-        { $push: { studentIds: student._id } }
-      );
+    // Also add the student to the studentIds array of the mentor.
+    await mentorsCollection.findOneAndUpdate(
+      { _id: mentor._id },
+      { $push: { studentIds: student._id } }
+    );
   } else {
-    await database
-      .collection("mentors")
-      .findOneAndUpdate(
-        { _id: student.mentorId },
-        { $pull: { studentIds: student._id } }
-      );
+    // If the student is already handled by a mentor. Remove the student from the student's previous mentor
+    await mentorsCollection.findOneAndUpdate(
+      { _id: student.mentorId },
+      { $pull: { studentIds: student._id } }
+    );
 
-    await database.collection("students").findOneAndUpdate(
+    // Add the provided mentor to the student and add the student's previous mentor in an array.
+    await studentsCollection.findOneAndUpdate(
       { _id: student._id },
       {
         $push: { previousMentors: student.mentorId },
@@ -116,6 +150,8 @@ exports.changeMentorOfStudent = catchAsync(async (req, res, next) => {
       }
     );
   }
+
+  // Sending the response for a successful updation.
 
   res.status(200).json({
     status: "success",
