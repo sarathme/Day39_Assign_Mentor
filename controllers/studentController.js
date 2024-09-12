@@ -146,3 +146,67 @@ exports.changeMentorOfStudent = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+// HANDLER FUNCTION TO GET ALL THE PREVIOUS MENTORS OF A STUDENT.
+
+exports.getPrevMentors = catchAsync(async (req, res, next) => {
+  // Connecting the database and selcting the mentor and student collection.
+
+  await client.connect();
+  const database = client.db("guvi_mentor");
+  const mentorsCollection = database.collection("mentors");
+  const studentsCollection = database.collection("students");
+
+  let student;
+
+  // CHECK IF THE PROVIDED STUDENT ID IS A VALID MONGODB ID
+  // IF SO THEN FIND THE STUDENT IN THE STUDENTS COLLECTION
+
+  if (ObjectId.isValid(req.params.studentId)) {
+    student = await studentsCollection.findOne({
+      _id: new ObjectId(req.params.studentId),
+    });
+  }
+
+  // IF THERE IS NO STUDENT WITH THE ID OR THE ID IS NOT A VALID MONGODB ID
+  // THEN SEND NOT FOUNS=D ERROR RESPONSE.
+
+  if (!student) {
+    await client.close();
+    return next(new AppError("No student found with the id", 404));
+  }
+
+  // INITIALIZE PREVIOUS MENTORS ARRAY.
+
+  let previousMentors = [];
+
+  // CHECK IF THE STUDENT HAVE ANY PREVIOUS MENTORS.
+
+  if (student.previousMentors) {
+    // LOOP THROUGH THE previousMentors ARRAY
+    for (let mentorId of student.previousMentors) {
+      // FIND THE MENTOR CORRESPONDING TO THE IDS OF THE PREVIOUS MENTORS
+      const mentor = await mentorsCollection.findOne(
+        { _id: mentorId },
+        { projection: { name: 1, email: 1 } }
+      );
+
+      // IF THERE IS A MENTOR WITH THE ID ADD THE MENTOR TO previousMentors ARRAY.
+
+      if (mentor) {
+        previousMentors.push(mentor);
+      }
+    }
+  }
+
+  // SEND SUCCESS RESPONSE WITH THE STUDENT NAME AND PREVIOUS MENTORS DATA.
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      studentName: student.name,
+      noOfPrevMentor: previousMentors.length,
+      previousMentors,
+    },
+  });
+});
