@@ -18,27 +18,20 @@ exports.createStudent = catchAsync(async (req, res, next) => {
 
   // Querying any student available with the requested email.
 
-  const studentsArr = await students
-    .find({
-      email: { $eq: req.body.email },
-    })
-    .toArray();
+  let student = await students.findOne({
+    email: { $eq: req.body.email },
+  });
 
-  let student;
-  // If no student found. Add the sent student to database.
-
-  if (!studentsArr.length) {
-    const created = await students.insertOne(req.body);
-    student = await students.findOne({ _id: created.insertedId });
-    await client.close();
-  } else {
-    // If email is present in database send a error response as student already exists.
-
+  // If email is present in database send a error response as student already exists.
+  if (student) {
     next(new AppError(`Email: ${req.body.email} already exists`, 400));
     await client.close();
     return;
   }
-
+  // If no student found. Add the sent student to database.
+  const created = await students.insertOne(req.body);
+  student = await students.findOne({ _id: created.insertedId });
+  await client.close();
   // Sending the created user in the response.
 
   res.status(201).json({
@@ -50,7 +43,7 @@ exports.createStudent = catchAsync(async (req, res, next) => {
 });
 
 exports.changeMentorOfStudent = catchAsync(async (req, res, next) => {
-  // Connecting and use the database using mongodb client.
+  // Connecting the database and selcting the mentor and student collection.
 
   await client.connect();
   const database = client.db("guvi_mentor");
@@ -69,15 +62,9 @@ exports.changeMentorOfStudent = catchAsync(async (req, res, next) => {
     mentor = await mentorsCollection.findOne({
       _id: new ObjectId(req.params.mentorId),
     });
-  } else {
-    // If the provided mentor id is not a valid mongodb id then send a error response.
-
-    next(new AppError("No mentor found with the provided id", 404));
-    await client.close();
-    return;
   }
 
-  // If there is no mentor found with the id then sending an error response of Not Found.
+  // If there is no mentor found with the id or Invalid mongodb Id then sending an error response of Not Found.
 
   if (!mentor) {
     next(new AppError("No mentor found with the provided id", 404));
@@ -92,14 +79,8 @@ exports.changeMentorOfStudent = catchAsync(async (req, res, next) => {
     student = await studentsCollection.findOne({
       _id: new ObjectId(req.params.studentId),
     });
-  } else {
-    // If the provided student id is not a valid mongodb id then send a error response.
-
-    next(new AppError("No student found with the provided id", 404));
-    await client.close();
-    return;
   }
-  // If there is no student found with the id then sending an error response of Not Found.
+  // If there is no student found with the id or invalid Mongodb Id then sending an error response of Not Found.
 
   if (!mentor) {
     next(new AppError("No mentor found with the provided id", 404));
