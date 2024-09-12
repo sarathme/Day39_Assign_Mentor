@@ -9,6 +9,8 @@ const url = process.env.DB_CONNECTION.replace(
 
 const client = new MongoClient(url);
 
+// HANDLER FUNCTION FOR CREATING A NEW STUDENT.
+
 exports.createStudent = catchAsync(async (req, res, next) => {
   // Connecting and selecting the student collection in database.
 
@@ -41,6 +43,8 @@ exports.createStudent = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+// HANDLER FUNCTION TO CHANGE MENTOR OF A STUDENT
 
 exports.changeMentorOfStudent = catchAsync(async (req, res, next) => {
   // Connecting the database and selcting the mentor and student collection.
