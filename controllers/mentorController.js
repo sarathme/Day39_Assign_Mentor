@@ -89,7 +89,7 @@ exports.addStudent = catchAsync(async (req, res, next) => {
       _id: new ObjectId(req.params.studentId),
     });
   }
-  console.log(student);
+
   // IF NO STUDENT FOUND WITH THE ID OR A INVALID MONGODB ID THEN SEND NOT FOUND ERROR RESPONSE.
 
   if (!student) {
@@ -245,7 +245,8 @@ exports.addMultipleStudents = catchAsync(async (req, res, next) => {
 
     if (
       ObjectId.isValid(studentId) &&
-      !mentor.studentIds.some((id) => id.equals(studentId))
+      (!mentor.studentIds ||
+        !mentor.studentIds.some((id) => id.equals(studentId)))
     ) {
       // CONVERT THE RECEIVED MONGODB ID AND CONVERT TO MONGPDB ID.
 

@@ -85,9 +85,9 @@ exports.changeMentorOfStudent = catchAsync(async (req, res, next) => {
     });
   }
   // If there is no student found with the id or invalid Mongodb Id then sending an error response of Not Found.
-
-  if (!mentor) {
-    next(new AppError("No mentor found with the provided id", 404));
+  console.log(student);
+  if (!student) {
+    next(new AppError("No student found with the provided id", 404));
     await client.close();
     return;
   }
@@ -109,15 +109,17 @@ exports.changeMentorOfStudent = catchAsync(async (req, res, next) => {
 
   if (!student.mentorId) {
     // if the student doesn't have a mentor add the mentor id to the student.
-    await studentsCollection.findOneAndUpdate(
+    student = await studentsCollection.findOneAndUpdate(
       { _id: student._id },
-      { $set: { mentorId: mentor._id } }
+      { $set: { mentorId: mentor._id } },
+      { returnDocument: "after" }
     );
 
     // Also add the student to the studentIds array of the mentor.
-    await mentorsCollection.findOneAndUpdate(
+    mentor = await mentorsCollection.findOneAndUpdate(
       { _id: mentor._id },
-      { $push: { studentIds: student._id } }
+      { $push: { studentIds: student._id } },
+      { returnDocument: "after" }
     );
   } else {
     // If the student is already handled by a mentor. Remove the student from the student's previous mentor
@@ -127,12 +129,13 @@ exports.changeMentorOfStudent = catchAsync(async (req, res, next) => {
     );
 
     // Add the provided mentor to the student and add the student's previous mentor in an array.
-    await studentsCollection.findOneAndUpdate(
+    student = await studentsCollection.findOneAndUpdate(
       { _id: student._id },
       {
         $push: { previousMentors: student.mentorId },
         $set: { mentorId: mentor._id },
-      }
+      },
+      { returnDocument: "after" }
     );
   }
 
