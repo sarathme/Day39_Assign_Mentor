@@ -1,5 +1,8 @@
 # Mentor Assign for Students API
 
+POSTMAN DOCUMENTATION:
+[Click Here](https://documenter.getpostman.com/view/16657839/2sAXqndj4k)
+
 ## Table of Contents
 
 1. [Utlity Functions](#utility-functions)
@@ -12,7 +15,7 @@
 
 ## Utility Functions
 
-#### Global error catching function for async functions
+### Global error catching function for async functions
 
 ```js
 // UTILITY FUNCTION TO ACT AS COMMON ERROR CATCHING PLACE FOR THE ASYNC FUNCTIONS.
